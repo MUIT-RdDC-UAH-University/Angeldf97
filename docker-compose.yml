@@ -1,0 +1,110 @@
+services:
+  web1ha:
+    build: ./web
+    image: webserver_httpd
+    container_name: web1ha
+    stdin_open: true
+    tty: true
+    restart: always
+    expose:
+      - 80
+    ports:
+      - 1000:80
+    networks:
+      rddc_net_p2:
+        ipv4_address: 192.168.3.11
+    volumes:
+      - './web/server1/index.html:/usr/local/apache2/htdocs/index.html'
+      - './web/capture/web1:/tmp/capture'
+
+  web2ha:
+    build: ./web
+    image: webserver_httpd
+    container_name: web2ha
+    stdin_open: true
+    tty: true
+    restart: always
+    expose:
+      - 80
+    ports:
+      - 1001:80
+    networks:
+      rddc_net_p2:
+        ipv4_address: 192.168.3.12
+    volumes:
+      - './web/server2/index.html:/usr/local/apache2/htdocs/index.html'
+      - './web/capture/web2:/tmp/capture'
+
+  haproxy1:
+    build: ./haproxy
+    image: haproxy_image
+    container_name: haproxy1
+    stdin_open: true
+    tty: true
+    restart: always
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - './haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg'
+      - './haproxy/haproxy:/usr/local/usr/local/etc/default/haproxy'
+      - './keepalive/haproxy1/keepalived.conf:/etc/keepalived/keepalived.conf'
+      - './haproxy/capture:/tmp/capture'
+    expose:
+      - 80
+    ports:
+      - 1002:80
+    depends_on:
+      - web1ha
+      - web2ha
+    networks:
+      rddc_net_p2:
+        ipv4_address: 192.168.3.9
+
+  haproxy2:
+    build: ./haproxy
+    image: haproxy_image
+    container_name: haproxy2
+    stdin_open: true
+    tty: true
+    restart: always
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - './haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg'
+      - './haproxy/haproxy:/usr/local/etc/default/haproxy'
+      - './keepalive/haproxy2/keepalived.conf:/etc/keepalived/keepalived.conf'
+      - './haproxy/capture:/tmp/capture'
+    expose:
+      - 80
+    ports:
+      - 1003:80
+    depends_on:
+      - web1ha
+      - web2ha
+    networks:
+      rddc_net_p2:
+        ipv4_address: 192.168.3.10  
+  cliente:
+    build: ./cliente
+    image: cliente_img
+    container_name: cliente
+    stdin_open: true
+    tty: true
+    restart: always
+    ports:
+      - 5901:5900
+    networks:
+      rddc_net_p2:
+        ipv4_address: 192.168.3.16
+    volumes:
+      - '/tmp/.X11-unix:/tmp/.X11-unix'
+      - '/tmp/.docker.xauth:/tmp/.docker.xauth:rw'
+      - './cliente/capture:/tmp/capture'
+
+networks:
+  rddc_net_p2:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: '192.168.3.0/24'
