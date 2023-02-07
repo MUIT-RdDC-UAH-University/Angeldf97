@@ -63,5 +63,4 @@ Examples:
 
 * `docker compose stop` turns off service containers
 * `docker compose rm` removes stopped service containers
-  cached images
 * `docker system prune` removes the containers.
